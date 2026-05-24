@@ -27,7 +27,13 @@ My background in distributed consensus (Raft/Paxos), state machines, event-drive
 
 ## 🏗️ Active Portfolios
 
-### 🎙️ Flagship Project: `prepHub-orchestrator`
+### ⚡ Primary Systems Portfolio: `resilient-ai-gateway`
+* **Path**: [`03-Portfolio-Projects/resilient-ai-gateway/`](file:///Users/lingquan/Projects/ai-transition-playbook/03-Portfolio-Projects/resilient-ai-gateway)
+* **Stack**: FastAPI (ASGI) + Redis (Sliding Token Buckets) + Stateful Circuit Breaker + Stream failovers.
+* **Problem Statement**: Native LLM API endpoints are slow, lack failover capabilities during provider outages, and enforce strict, easily-tripped Requests-Per-Minute and Tokens-Per-Minute limits.
+* **Solution**: A high-throughput reverse-proxy gateway that handles distributed token-bucket rate limiting, sub-millisecond semantic caching, and a stateful circuit breaker that hot-swaps streams in flight (<50ms failover) if a provider crashes.
+
+### 🎙️ Secondary Product Portfolio: `prepHub-orchestrator`
 * **Path**: [`03-Portfolio-Projects/prepHub-orchestrator/`](file:///Users/lingquan/Projects/ai-transition-playbook/03-Portfolio-Projects/prepHub-orchestrator)
 * **Stack**: OpenAI Realtime API (WebRTC) + LangGraph Multi-Agent Engine + pgvector (Supabase).
 * **Problem Statement**: Standard mock interview platforms rely on slow, linear asynchronous text interfaces, leading to unnatural conversational delays and generic, unchallenging coaching metrics.

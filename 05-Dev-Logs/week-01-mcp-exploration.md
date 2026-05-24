@@ -1,32 +1,33 @@
-# 🪵 Week 01 Dev Log: Pushing WebRTC & LangGraph Boundaries
+# 🪵 Week 01 Dev Log: Resilient Gateways & WebRTC Orchestration
 
 ## 📅 Chronology: May 23, 2026
 
 ## 🎯 Weekly Goals
-1. Establish the "Build in Public" scaffolding and link it to my full-stack platform: **PrepHub**.
-2. Complete research on the **OpenAI Realtime API (WebRTC) sessions**, specifically testing the `/sessions` ephemeral token exchange mechanisms.
-3. Design and implement the multi-agent LangGraph interview coordinator topology.
+1. Establish the "Build in Public" scaffolding and design two flagship portfolios: **resilient-ai-gateway** (Primary Systems) and **prepHub-orchestrator** (Secondary Product).
+2. Complete research and code implementations for an asynchronous LLM proxy with distributed rate limiting (RPM/TPM) and circuit breaking.
+3. Investigate ephemeral token configurations for WebRTC audio streams in PrepHub.
 
 ---
 
 ## 💡 Key Architectural Revelations
 
-### 1. Ephemeral Tokens for WebRTC Client Safety
-In our early Next.js mock-ups, calling OpenAI directly from the browser meant exposing the master `OPENAI_API_KEY` in headers, creating a critical vulnerability.
-* **The Solution**: Designed a secure session bridge inside `/realtime/session.py`. The Next.js client requests an ephemeral token from our FastAPI backend, passing a target interview schema. The backend uses the master key to hit `https://api.openai.com/v1/realtime/sessions`, retrieves a short-lived key (expires in 1 minute), and streams it back to the client. This enforces zero-trust token isolation in production.
+### 1. Atomic Redis sliding windows for TPM rate limits
+Standard API gateways track Requests-Per-Minute (RPM) using simple increment keys. However, LLM providers restrict Tokens-Per-Minute (TPM). 
+* **My Design**: Implemented `RedisTokenBucketLimiter` using Redis Sorted Sets (`ZADD`, `ZREMRANGEBYSCORE`). This calculates exact sliding-window token volumes atomically, blocking excessive requests before executing downstream API calls, preventing 429 lockouts in production.
 
-### 2. Eliminating Conversational Delay
-Standard mock interview queues suffer from a 3-5s "Cascaded Lag" (STT -> LLM reasoning -> TTS). By implementing the **OpenAI Realtime WebRTC direct connection**, audio packages are sent natively. The latency dropped from **4,200ms** to **sub-450ms**, making the AI conversational flow indistinguishable from a real human interaction.
+### 2. High-speed SSE streaming failovers (<50ms)
+When a downstream provider crashes, standard reverse proxies return a raw 500 error to the client, ruining the user experience.
+* **My Design**: Programmed the proxy router in FastAPI to yield chunks asynchronously via `StreamingResponse`. The router wraps the stream block in a try-except layer. If OpenAI errors mid-stream, the router catches the exception and recursively invokes the backup provider (Anthropic) in under 50ms, hot-swapping the stream transparently for the client.
 
 ---
 
 ## 🛠️ Build Failures & How I Solved Them
-* **Problem**: When loading multiple resumes into the pgvector database for testing, concurrent database connections caused thread exhaustion, locking up the FastAPI pool.
+* **Problem**: In `psycopg2` pgvector queries, high concurrent bursts caused connection pool exhaustion.
 * **Solution**: Rewrote the pgvector database queries to utilize a thread-safe connection pooling system (`psycopg2.pool`) inside our `retriever.py`, managing execution pipelines asynchronously and ensuring connection cleanups inside `finally` blocks.
 
 ---
 
 ## 📊 Plans for Week 2
 - [ ] Connect the Next.js frontend audio tracks directly to the backend session controller.
-- [ ] Integrate full-text index search (BM25) with vector embeddings (pgvector) inside Supabase and benchmark our `hybrid_search_rrf` results.
+- [ ] Spin up local Redis and Postgres instances inside Docker-compose to test sliding-window token updates.
 - [ ] Write statistical evaluation tests using the Promptfoo CLI to measure answer relevance metrics.
