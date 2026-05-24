@@ -1,37 +1,32 @@
-# 🪵 Week 01 Dev Log: Pushing MCP & LangGraph Boundaries
+# 🪵 Week 01 Dev Log: Pushing WebRTC & LangGraph Boundaries
 
 ## 📅 Chronology: May 23, 2026
 
 ## 🎯 Weekly Goals
-1. Establish the "Build in Public" scaffolding to track my Applied AI Staff journey.
-2. Complete research on the **Model Context Protocol (MCP)** limits, specifically investigating SSE (Server-Sent Events) vs Stdio transport overheads.
-3. Architecture design for `repo-migrator-agent`.
+1. Establish the "Build in Public" scaffolding and link it to my full-stack platform: **PrepHub**.
+2. Complete research on the **OpenAI Realtime API (WebRTC) sessions**, specifically testing the `/sessions` ephemeral token exchange mechanisms.
+3. Design and implement the multi-agent LangGraph interview coordinator topology.
 
 ---
 
 ## 💡 Key Architectural Revelations
 
-### 1. The Real Cost of Local Stdio vs. SSE
-When writing MCP servers, the default quickstart recommends **Stdio transport** (child processes writing JSON-RPC to standard output). 
-* **The Good**: It's highly secure and requires no open ports. When the parent CLI tool exits, the server process terminates instantly.
-* **The Bad**: In a micro-services or multi-agent orchestrator setup, launching processes for every file read or compile step introduces massive initialization delays (especially with Node/Python cold starts).
-* **The Shift**: Moving forward, the flagship `repo-migrator-agent` compiler tools will run via an **SSE-based HTTP server** inside a persistent Docker container. This gives us sub-millisecond JSON-RPC round-trip times and enables robust container scaling.
+### 1. Ephemeral Tokens for WebRTC Client Safety
+In our early Next.js mock-ups, calling OpenAI directly from the browser meant exposing the master `OPENAI_API_KEY` in headers, creating a critical vulnerability.
+* **The Solution**: Designed a secure session bridge inside `/realtime/session.py`. The Next.js client requests an ephemeral token from our FastAPI backend, passing a target interview schema. The backend uses the master key to hit `https://api.openai.com/v1/realtime/sessions`, retrieves a short-lived key (expires in 1 minute), and streams it back to the client. This enforces zero-trust token isolation in production.
 
-### 2. Guarding AST-Level Read Tools
-When feeding code bases to LLMs, sending entire raw files is a waste of money and pollutes the context window.
-* **Insight**: Built a custom file parser tool schema in the `mcp-server-fs` server. Instead of a simple `read_file(path)` tool, I designed:
-  * `read_symbol_ast(path, symbol_name)`: Returns only the target class or method definition.
-  * `find_references(path, regex_query)`: Mimics classical LSP behavior to trace dependencies across the project.
+### 2. Eliminating Conversational Delay
+Standard mock interview queues suffer from a 3-5s "Cascaded Lag" (STT -> LLM reasoning -> TTS). By implementing the **OpenAI Realtime WebRTC direct connection**, audio packages are sent natively. The latency dropped from **4,200ms** to **sub-450ms**, making the AI conversational flow indistinguishable from a real human interaction.
 
 ---
 
 ## 🛠️ Build Failures & How I Solved Them
-* **Problem**: The LLM frequently generated invalid JSON schema syntax when making tool calls through MCP, especially when double-quoting array arguments inside a nested bash call.
-* **Solution**: Implemented an explicit validation node in the LangGraph coordinator immediately following the LLM generation step. This node intercepts tool calls, parses them, repairs minor quoting errors, and returns an instructive syntax error message to the LLM *before* executing the tool, preventing the orchestrator from crashing.
+* **Problem**: When loading multiple resumes into the pgvector database for testing, concurrent database connections caused thread exhaustion, locking up the FastAPI pool.
+* **Solution**: Rewrote the pgvector database queries to utilize a thread-safe connection pooling system (`psycopg2.pool`) inside our `retriever.py`, managing execution pipelines asynchronously and ensuring connection cleanups inside `finally` blocks.
 
 ---
 
 ## 📊 Plans for Week 2
-- [ ] Write the core Node/TypeScript codebase for `mcp-servers/mcp-server-fs`.
-- [ ] Hook up Qdrant vector database and write the multi-vector parsing utility in Python.
-- [ ] Record the first demo of a self-correcting import refactoring task.
+- [ ] Connect the Next.js frontend audio tracks directly to the backend session controller.
+- [ ] Integrate full-text index search (BM25) with vector embeddings (pgvector) inside Supabase and benchmark our `hybrid_search_rrf` results.
+- [ ] Write statistical evaluation tests using the Promptfoo CLI to measure answer relevance metrics.

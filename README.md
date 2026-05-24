@@ -27,11 +27,11 @@ My background in distributed consensus (Raft/Paxos), state machines, event-drive
 
 ## 🏗️ Active Portfolios
 
-### 🤖 Flagship Project: `repo-migrator-agent`
-* **Path**: [`03-Portfolio-Projects/repo-migrator-agent/`](file:///Users/lingquan/Projects/ai-transition-playbook/03-Portfolio-Projects/repo-migrator-agent)
-* **Stack**: Model Context Protocol (MCP) + LangGraph + Advanced Hybrid RAG.
-* **Problem Statement**: Standard codebase migrations (e.g., migrating from deprecated APIs or frameworks) fail because they lack codebase-wide semantic understanding, struggle with multi-file dependencies, and lack self-correction compilers.
-* **Solution**: A stateful multi-agent system utilizing MCP servers to read, edit, compile, and run tests locally, iteratively fixing migration errors until green.
+### 🎙️ Flagship Project: `prepHub-orchestrator`
+* **Path**: [`03-Portfolio-Projects/prepHub-orchestrator/`](file:///Users/lingquan/Projects/ai-transition-playbook/03-Portfolio-Projects/prepHub-orchestrator)
+* **Stack**: OpenAI Realtime API (WebRTC) + LangGraph Multi-Agent Engine + pgvector (Supabase).
+* **Problem Statement**: Standard mock interview platforms rely on slow, linear asynchronous text interfaces, leading to unnatural conversational delays and generic, unchallenging coaching metrics.
+* **Solution**: A high-speed, sub-500ms conversational audio broker built with OpenAI Realtime WebRTC, driven by a stateful multi-agent LangGraph system that dynamically researches target companies using web-search tools and aggregates STAR performance scoring.
 
 ---
 
