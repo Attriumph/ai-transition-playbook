@@ -27,26 +27,23 @@ My background in distributed consensus (Raft/Paxos), state machines, event-drive
 
 ## 🏗️ Active Portfolios
 
-### ⚡ Primary Systems Portfolio: `resilient-ai-gateway`
-* **Path**: [`03-Portfolio-Projects/resilient-ai-gateway/`](file:///Users/lingquan/Projects/ai-transition-playbook/03-Portfolio-Projects/resilient-ai-gateway)
-* **Stack**: FastAPI (ASGI) + Redis (Sliding Token Buckets) + Stateful Circuit Breaker + Stream failovers.
-* **Problem Statement**: Native LLM API endpoints are slow, lack failover capabilities during provider outages, and enforce strict, easily-tripped Requests-Per-Minute and Tokens-Per-Minute limits.
-* **Solution**: A high-throughput reverse-proxy gateway that handles distributed token-bucket rate limiting, sub-millisecond semantic caching, and a stateful circuit breaker that hot-swaps streams in flight (<50ms failover) if a provider crashes.
-
-### 🎙️ Secondary Product Portfolio: `prepHub-orchestrator`
+### ⚡ Primary Systems Portfolio: `prepHub-orchestrator` (Multimodal Vision Enhanced)
 * **Path**: [`03-Portfolio-Projects/prepHub-orchestrator/`](file:///Users/lingquan/Projects/ai-transition-playbook/03-Portfolio-Projects/prepHub-orchestrator)
-* **Stack**: OpenAI Realtime API (WebRTC) + LangGraph Multi-Agent Engine + pgvector (Supabase).
-* **Problem Statement**: Standard mock interview platforms rely on slow, linear asynchronous text interfaces, leading to unnatural conversational delays and generic, unchallenging coaching metrics.
-* **Solution**: A high-speed, sub-500ms conversational audio broker built with OpenAI Realtime WebRTC, driven by a stateful multi-agent LangGraph system that dynamically researches target companies using web-search tools and aggregates STAR performance scoring.
+* **Stack**: OpenAI Realtime API (WebRTC) + Vision API + LangGraph Multi-Agent Engine + pgvector (Supabase).
+* **Problem Statement**: Standard mock interview platforms rely on slow, linear asynchronous text interfaces. They also fail to evaluate visual components of an interview, such as whiteboard system designs or coding screencasts.
+* **Solution**: An advanced, sub-500ms conversational audio broker built with WebRTC. It features a **Multimodal Interview Agent** capable of "seeing" user-uploaded diagrams or screen captures in real-time. The system uses a stateful multi-agent LangGraph to dynamically evaluate visual architectures alongside verbal explanations, creating an uncompromising, realistic "Senior/Staff" interview experience.
+
+*(Note: The `resilient-ai-gateway` project has been deprecated in favor of focusing purely on state-of-the-art multimodal/agentic architectures, which are the primary hiring signal for Applied AI Engineers in 2026.)*
 
 ---
 
 ## 🛠️ Tech Stack Competency Tracker
 
+- [ ] **Multimodal AI**: Vision-language models (VLM), real-time audio (WebRTC integrations), spatial/layout grounding, prompt engineering for visual components.
 - [ ] **Agentic Workflows**: LangGraph (State Graph, Redux-like reducers, Human-in-the-loop), Temporal.io for durable agent execution.
 - [ ] **Retrieval-Augmented Generation (RAG)**: Hybrid Search (Sparse/Dense), Dense Vector DBs (Qdrant/pgvector), Cohere Rerank, Cohere/ColBERT multi-vector retrieval.
 - [ ] **Protocols**: Model Context Protocol (MCP) servers, custom tool definitions, transport layers (SSE vs Stdio).
-- [ ] **LLMOps & Evaluation**: LangSmith for tracing, Ragas/Promptfoo for LLM-assisted evaluations, prompt caching optimization, semantic caching.
+- [ ] **LLMOps & Evaluation**: LangSmith for tracing, Ragas/DeepEval for LLM-assisted evaluations (Metrics: Faithfulness, Answer Relevance), prompt caching optimization, semantic caching.
 
 ---
 

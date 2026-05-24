@@ -1,6 +1,6 @@
-# 🎙️ Flagship Project: `prepHub-orchestrator`
+# 🎙️👁️ Flagship Project: `prepHub-orchestrator` (Multimodal Edition)
 
-> A production-grade, low-latency AI-Powered Interview Orchestrator that powers **PrepHub**. It features **OpenAI Realtime (WebRTC) Session Management**, a stateful **LangGraph Multi-Agent Interview Graph**, and a secure **pgvector Hybrid Search engine**.
+> A production-grade, low-latency AI-Powered Interview Orchestrator that powers **PrepHub**. It features **OpenAI Realtime (WebRTC) Session Management**, a stateful **LangGraph Multi-Agent Interview Graph**, a secure **pgvector Hybrid Search engine**, and **Multimodal Vision Integration** for evaluating architecture diagrams and code.
 
 ---
 
@@ -11,16 +11,19 @@ This orchestrator handles the transition from standard asynchronous text interfa
 ```mermaid
 flowchart TD
     Client[Next.js Client] -->|1. Request Session Token| Gateway[FastAPI Gateway]
+    Client -.->|Uploads Whiteboard/Code Snapshot| Gateway
     Gateway -->|2. Request Ephemeral Token| OpenAI[OpenAI Realtime API]
+    Gateway -->|Visual Input| VisionModel[Gemini Pro Vision / GPT-4o]
     Client == 3. WebRTC Audio SDP Session === OpenAI
     
     subgraph FastAPI Orchestrator
         direction TB
         Gateway -->|4. Trigger Interview Graph| LangGraph[LangGraph State Engine]
+        VisionModel -->|Visual Context| LangGraph
         
         subgraph LangGraph
             Init[Init Session] --> Route{Next Node}
-            Route -->|Analyze Audio Transcript| Critic[Critic Agent]
+            Route -->|Analyze Audio Transcript & Diagram| Critic[Critic Agent]
             Route -->|Generate Follow-up Question| Interviewer[ReAct Interviewer Agent]
             Route -->|Generate STAR Score Report| Coach[Coach Agent]
         end
@@ -49,7 +52,9 @@ flowchart TD
 
 1. **Sub-500ms Audio Latency (WebRTC)**:
    Instead of the traditional "Record Audio -> Transcribe (Whisper) -> Generate Text (GPT-4) -> Text-to-Speech (TTS)" cascade (which takes 3-5 seconds and feels disjointed), the orchestrator opens a direct **WebRTC Peer Connection** to OpenAI. Audio is streamed, processed, and responded to natively, achieving real-time conversation flows.
-2. **Dynamic ReAct Interviewer with AST/Web Tooling**:
+2. **Multimodal Vision Context for System Design**:
+   The orchestrator handles complex data fusion by integrating vision language models (VLMs). During a mock technical interview, the agent "looks" at whiteboard diagram snapshots or screen captures (via Gemini 2.5 Pro or GPT-4o vision APIs), grounding its verbal feedback and follow-up questions in the actual architecture drawn by the user.
+3. **Dynamic ReAct Interviewer with AST/Web Tooling**:
    The `InterviewerAgent` is not pre-prompted with static lists of questions. It leverages autonomous search tools to look up real-time news and stack architectures of the target company (e.g., searching for "latest Qdrant updates" or "Shopify engineering blog posts") to formulate hyper-tailored, realistic system design scenarios.
-3. **Optimized pgvector Search**:
+4. **Optimized pgvector Search**:
    Utilizes Postgres `pgvector` with **HNSW (Hierarchical Navigable Small World)** indexing and L2 distance calculations, coupled with secure row-level security pre-filtering to prevent cross-tenant vector contamination.
