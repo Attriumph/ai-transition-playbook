@@ -1,52 +1,108 @@
 # 🔌 Model Context Protocol (MCP): The Universal Interface
 
-## 💡 The Paradigm Shift
-As LLMs shift from chatbots to autonomous agents, tool use has historically been highly fragmented. Every framework had its own format. The **Model Context Protocol (MCP)**, open-sourced by Anthropic, introduces a standardized, JSON-RPC-based client-server architecture for LLM tools, resources, and prompts. It operates similarly to the Language Server Protocol (LSP) for editors.
+## 💡 The Unified Tool Standard
+Historically, connecting LLMs to custom enterprise data sources and local developer tools required writing fragile, framework-specific adapter layers (LangChain tools, LlamaIndex data loaders, custom OpenAI functions). 
+
+The **Model Context Protocol (MCP)** standardizes this interface. Operative like the Language Server Protocol (LSP) in IDEs, MCP defines a structured, JSON-RPC 2.0-based contract separating the **LLM Orchestration Client** from isolated **Context & Tool Servers**.
 
 ---
 
-## 🗺️ Core Curriculum
+## 🗺️ Core Curriculum & Architectural Deep Dives
 
-### 1. Architectural Blueprint
-MCP decouples the **LLM Client** (which acts as the orchestrator and orchestrates prompt routing) from the **MCP Servers** (which expose localized resources, tools, and custom prompt templates).
-* **Key Components**:
-  * **MCP Host/Client**: Connects to one or more MCP servers. Examples: Claude Desktop, Cursor, Custom orchestrator.
-  * **MCP Server**: Lightweight services exposing endpoints.
-  * **JSON-RPC 2.0**: The protocol transport layer message format.
+### 1. JSON-RPC 2.0 Protocol Handshake & Execution Frames
+MCP clients and servers communicate by exchange of standard JSON-RPC 2.0 messages. Let's study the raw protocol packets for a tool execution request and response.
 
-### 2. The Core Primitives
-MCP defines three primary interfaces that servers can expose:
-* **Resources**: Readable data sources (e.g., local files, database tables, git repositories, API responses).
-* **Tools**: Executable actions with JSON Schema definitions (e.g., running shell commands, editing a file, compiling code, triggering webhooks).
-* **Prompts**: Standardized prompt templates with user arguments (e.g., code-review template, refactor template).
+#### 🛰️ Client Tool Discovery Request
+When the client boots, it queries the server to fetch all available tools and their respective JSON Schema argument expectations:
 
-### 3. Transport Protocols
-* **Stdio Transport**: 
-  * Local communication.
-  * Host launches the server process via stdin/stdout.
-  * Perfect for local developer agents and desktop applications.
-* **Server-Sent Events (SSE) Transport**:
-  * Over-the-air communication.
-  * Client connects via HTTP POST and receives streamed SSE responses.
-  * Required for cloud-native agents, remote databases, and distributed MCP servers.
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/list",
+  "id": 1
+}
+```
 
-### 4. Security & Isolation
-* **Sandboxing**: Restricting MCP tools from executing arbitrary commands directly on the host machine.
-* **Authentication**: Securing SSE endpoints with Bearer tokens and mutual TLS (mTLS).
-* **Permission Model**: Designing user-approval gates before executing mutating tools.
+#### 📥 Server Discovery Response
+The server returns a structured array of schemas:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "tools": [
+      {
+        "name": "parse_python_ast",
+        "description": "Extracts high-level syntax nodes (classes, function names) from a Python file.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Absolute filesystem path to the Python file."
+            }
+          },
+          "required": ["path"]
+        }
+      }
+    ]
+  },
+  "id": 1
+}
+```
+
+#### 🛰️ Client Execution Request (Invoking Tool)
+When the LLM decides to execute the tool, the client serializes the parameters and sends the invocation call:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "parse_python_ast",
+    "arguments": {
+      "path": "/Users/lingquan/Projects/ai-transition-playbook/orchestrator/main.py"
+    }
+  },
+  "id": 2
+}
+```
 
 ---
 
-## 🛠️ Practical Drills & Tracker
+### 2. Transport Layer Deep Dive: Stdio vs. SSE
+MCP isolates transport logic from the protocol schema. There are two standard transport layers:
 
-- [ ] **Drill 1**: Build a basic Python MCP server using the `@mcp` decorator that exposes a single resource: `/system/metrics` returning live CPU, Memory, and Disk usage of the host machine.
-- [ ] **Drill 2**: Build an SSE-based MCP server in Node.js/TypeScript that connects to a local SQLite database. Deploy it locally and access it using Claude Desktop by editing the `claude_desktop_config.json`.
-- [ ] **Drill 3**: Create a custom MCP client (in Python) that connects to a local Stdio MCP server, parses its JSON schema tools, executes tool calls outputted by an LLM, and sends back the result.
-- [ ] **Drill 4**: Build a secure execution sandbox for an MCP shell executor using a Docker container, routing shell commands from the MCP client to the containerized environment.
+#### A. Stdio (Standard Input/Output)
+* **Under the Hood**: The client spawns the server process locally (e.g., via `subprocess.Popen`) and sends raw JSON lines via stdin, reading response frames via stdout.
+* **Best For**: Local IDE extensions (Cursor, VSCode), desktop assistant runtimes (Claude Desktop).
+* **Limitations**: Highly coupled; cannot easily run in cloud container architectures or connect to remote infrastructure without SSH tunneling.
+
+#### B. SSE (Server-Sent Events) HTTP Transport
+* **Under the Hood**: The server runs as a standard web server. The client establishes a persistent HTTP connection using SSE to receive events streamed from the server. Client writes to the server using standard HTTP POST requests.
+* **Best For**: Distributed AI microservices, cloud-native deployments, secure sandboxed execution environments.
+
+```
++------------+       HTTP POST /messages (Client Sends Data)      +------------+
+|            | -------------------------------------------------> |            |
+| MCP Client |                                                    | MCP Server |
+|            | <------------------------------------------------- |            |
++------------+   Persistent HTTP /sse Stream (Server Sends Data)  +------------+
+```
 
 ---
 
-## 📚 Resources
-* [Model Context Protocol Specification & Docs](https://modelcontextprotocol.io/)
-* [Anthropic Quickstart: Building MCP Servers](https://github.com/modelcontextprotocol/quickstart)
-* [Awesome MCP: Curated List of Servers](https://github.com/punkpeye/awesome-mcp)
+### 3. Security, Sandboxing & Zero-Trust Architectures
+Giving an LLM access to tools (like shell execution or database writes) introduces significant security risks (Prompt Injection exploits).
+* **Network Isolation**: Run remote SSE MCP servers inside strictly sandboxed Docker containers with disabled outbound internet access unless explicitly required.
+* **Mutual TLS (mTLS)**: Force cryptographic validation on both client and server sides to secure remote SSE channels.
+* **Write Gates**: Implement a tokenized cryptographic validation loop. When a tool requests a mutating change (e.g., `write_file` or `delete_record`), the client interrupts the graph and requires a signed user approval before returning the response payload.
+
+---
+
+## 🛠️ Practical Drills & Competency Benchmarks
+
+- [ ] **Drill 1**: Read the complete Model Context Protocol JSON-RPC specification. Write a simple Python TCP socket server that manually handles client handshakes without utilizing the official SDK.
+- [ ] **Drill 2**: Build an SSE-based Node.js or Python FastMCP server, expose it over a local port, and connect to it using a standard client web interface to monitor JSON-RPC payload events.
+- [ ] **Drill 3**: Implement a local "sandbox file explorer" tool that strictly restricts the directory path argument of all filesystem operations to a designated sub-folder (jailbreak prevention).
+- [ ] **Drill 4**: Integrate your custom `fs_server.py` directly into Claude Desktop by configuring the local `claude_desktop_config.json` file.
